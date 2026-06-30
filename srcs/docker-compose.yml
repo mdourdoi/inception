@@ -22,6 +22,7 @@ services:
     environment:
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PORT=${MYSQL_PORT}
     secrets:
       - db_password
       - db_root_password

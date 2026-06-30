@@ -19,5 +19,6 @@ EOF
 fi
 
 INIT_FILE="--init-file=/tmp/init.sql"
+	cat > /tmp/init.sql <<EOF
 
-exec mariadbd --user=mysql $INIT_FILE
+exec mariadbd --user=mysql --port=$MYSQL_PORT $INIT_FILE
