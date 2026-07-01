@@ -2,6 +2,7 @@ networks:
   inception:
 
 volumes:
+
   mariadb_data:
     driver: local
     driver_opts:
@@ -9,16 +10,26 @@ volumes:
       device: /home/mdourdoi/data/mariadb
       o: bind
 
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/mdourdoi/data/wordpress
+      o: bind
+
 secrets:
+
   db_password:
     file: ../secrets/db_password.txt
   db_root_password:
     file: ../secrets/db_root_password.txt
+  credentials:
+    file: ../secrets/credentials.txt
 
 services:
+
   mariadb:
-    build: 
-      ./requirements/mariadb
+    build: ./requirements/mariadb
     environment:
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
@@ -30,4 +41,28 @@ services:
       - mariadb_data:/var/lib/mysql
     networks:
       - inception
+    restart: unless-stopped
+
+  wordpress:
+    build: ./requirements/wordpress
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - WORDPRESS_PORT=${WORDPRESS_PORT}
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - WP_TITLE=${WP_TITLE}
+      - WP_ADMIN_USER=${WP_ADMIN_USER}
+      - WP_ADMIN_EMAIL=${WP_ADMIN_EMAIL}
+      - WP_USER=${WP_USER}
+      - WP_USER_EMAIL=${WP_USER_EMAIL}
+    secrets:
+      - db_password
+      - credentials
+    volumes:
+      - wordpress_data:/var/www/wordpress
+    networks:
+      - inception
+    depends_on:
+      - mariadb
     restart: unless-stopped
