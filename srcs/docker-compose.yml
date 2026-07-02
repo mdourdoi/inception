@@ -66,3 +66,20 @@ services:
     depends_on:
       - mariadb
     restart: unless-stopped
+
+  nginx:
+    build: ./requirements/nginx
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - NGINX_PORT=${NGINX_PORT}
+      - WORDPRESS_PORT=${WORDPRESS_PORT}
+    volumes:
+      - wordpress_data:/var/www/wordpress
+    networks:
+      - inception
+    ports:
+      - "${NGINX_PORT}:${NGINX_PORT}"
+    depends_on:
+      - wordpress
+    restart: unless-stopped
+    
