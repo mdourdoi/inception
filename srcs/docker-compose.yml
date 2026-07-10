@@ -29,6 +29,7 @@ secrets:
 services:
 
   mariadb:
+    image: mariadb:inception
     build: ./requirements/mariadb
     environment:
       - MYSQL_DATABASE=${MYSQL_DATABASE}
@@ -44,6 +45,7 @@ services:
     restart: unless-stopped
 
   wordpress:
+    image: wordpress:inception
     build: ./requirements/wordpress
     environment:
       - MYSQL_DATABASE=${MYSQL_DATABASE}
@@ -68,6 +70,7 @@ services:
     restart: unless-stopped
 
   nginx:
+    image: nginx:inception
     build: ./requirements/nginx
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME}
