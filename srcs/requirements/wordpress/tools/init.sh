@@ -10,8 +10,9 @@ if [ ! -f /var/www/wordpress/wp-settings.php ]; then
 fi
 
 if [ ! -f /var/www/wordpress/wp-config.php ]; then
-    wp config create --path=/var/www/wordpress --dbname="$MYSQL_DATABASE" --dbuser="$MYSQL_USER" --dbpass="$(cat /run/secrets/db_password)" --dbhost=mariadb --allow-root
+    wp config create --path=/var/www/wordpress --dbname="$MYSQL_DATABASE" --dbuser="$MYSQL_USER" --dbpass="$(cat /run/secrets/db_password)" --dbhost="mariadb:$MYSQL_PORT" --allow-root
 fi
+wp config set DB_HOST "mariadb:$MYSQL_PORT" --path=/var/www/wordpress --allow-root
 
 if ! wp core is-installed --path=/var/www/wordpress --allow-root 2>/dev/null; then
     wp core install \
@@ -30,6 +31,8 @@ if ! wp core is-installed --path=/var/www/wordpress --allow-root 2>/dev/null; th
         --path=/var/www/wordpress \
         --allow-root
 fi
+wp option update siteurl "https://$DOMAIN_NAME:$NGINX_PORT" --path=/var/www/wordpress --allow-root
+wp option update home "https://$DOMAIN_NAME:$NGINX_PORT" --path=/var/www/wordpress --allow-root
 
 cat > /etc/php/8.2/fpm/pool.d/www.conf <<EOF
 [www]
