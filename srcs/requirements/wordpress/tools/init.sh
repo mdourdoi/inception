@@ -31,8 +31,14 @@ if ! wp core is-installed --path=/var/www/wordpress --allow-root 2>/dev/null; th
         --path=/var/www/wordpress \
         --allow-root
 fi
-wp option update siteurl "https://$DOMAIN_NAME:$NGINX_PORT" --path=/var/www/wordpress --allow-root
-wp option update home "https://$DOMAIN_NAME:$NGINX_PORT" --path=/var/www/wordpress --allow-root
+
+if [ "$NGINX_PORT" = "443" ]; then
+    SITE_URL="https://$DOMAIN_NAME"
+else
+    SITE_URL="https://$DOMAIN_NAME:$NGINX_PORT"
+fi
+wp option update siteurl "$SITE_URL" --path=/var/www/wordpress --allow-root
+wp option update home "$SITE_URL" --path=/var/www/wordpress --allow-root
 
 cat > /etc/php/8.2/fpm/pool.d/www.conf <<EOF
 [www]

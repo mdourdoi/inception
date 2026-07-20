@@ -23,7 +23,7 @@ http {
 		root /var/www/wordpress;
 		index index.php;
 		location / {
-			try_files \$uri \$uri/ =404;
+			try_files \$uri \$uri/ /index.php?\$args;
 		}
 		location ~ \.php\$ {
  	  		include snippets/fastcgi-php.conf;
