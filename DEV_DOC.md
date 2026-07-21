@@ -29,6 +29,13 @@ scratch, and where its data lives.
    WP_ADMIN_EMAIL=
    WP_USER=
    WP_USER_EMAIL=
+   REDIS_PORT=6379
+   FTP_USER=
+   FTP_PORT=21
+   FTP_PASV_MIN=21000
+   FTP_PASV_MAX=21005
+   STATIC_PORT=8081
+   ADMINER_PORT=8082
    ```
 
 3. Create the secret files under `secrets/` (raw value, one per file - except
@@ -36,6 +43,7 @@ scratch, and where its data lives.
 
    - `secrets/db_password.txt` - the database application user's password.
    - `secrets/db_root_password.txt` - the database root password.
+   - `secrets/ftp_password.txt` - the FTP user's password.
    - `secrets/credentials.txt`:
      ```
      WP_ADMIN_PASSWORD=<admin password>
@@ -82,18 +90,40 @@ docker compose -f srcs/docker-compose.yml up --build -d
 - **nginx:** generates a self-signed certificate on first run, serves the
   WordPress files over TLS, and forwards `.php` requests to
   `wordpress:9000` via FastCGI. Published on `NGINX_PORT` (443) - the only
-  exposed port.
+  exposed port of the mandatory part.
+- **redis (bonus):** runs `redis-server` in the foreground with a memory cap
+  and an LRU eviction policy. Listens on `REDIS_PORT` (6379), internal only.
+  The WordPress entrypoint installs the `redis-cache` plugin, points it at
+  `redis:REDIS_PORT` and enables the object cache drop-in.
+- **ftp (bonus):** creates the FTP user (password from the `ftp_password`
+  secret), writes the vsftpd configuration from the environment, and runs
+  `vsftpd` in the foreground, chrooted into the WordPress volume. Publishes
+  `FTP_PORT` (21) and the passive range `FTP_PASV_MIN`-`FTP_PASV_MAX`.
+- **static (bonus):** serves a plain HTML/CSS page presenting the project (copied into the
+  image at build time) with `python3 -m http.server`. Published on
+  `STATIC_PORT` (8081).
+- **adminer (bonus):** downloads the single-file Adminer at build time and
+  serves it with PHP's built-in CLI server. At startup, the entrypoint
+  generates a small `index.php` wrapper that redirects the first visit to
+  `?server=mariadb:MYSQL_PORT`, so the login form is always pre-filled with the
+  current database port. Published on `ADMINER_PORT` (8082).
+- **backup (bonus):** writes an hourly cron job that runs `mariadb-dump`
+  (root password from the `db_root_password` secret) into the `backup_data`
+  volume, keeping the last 7 dumps, then runs `cron -f` in the foreground.
+  Internal only.
 
 ## Where the data is stored and how it persists
 
 Two named volumes back the persistent data, each bound to a directory on the
-host:
+host, plus a third one for the bonus backups:
 
 - `mariadb_data` → `/home/mdourdoi/data/mariadb` - the database files
   (`/var/lib/mysql` in the container).
 - `wordpress_data` → `/home/mdourdoi/data/wordpress` - the website files
   (`/var/www/wordpress` in the container), shared with NGINX so it can serve the
-  static files.
+  static files, and with the FTP container so files can be uploaded.
+- `backup_data` → `/home/mdourdoi/data/backups` - the hourly database dumps
+  (`/backups` in the container).
 
 Because these directories live on the host, the data survives container
 destruction and recreation: `make down` followed by `make up` keeps everything.

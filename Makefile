@@ -8,6 +8,7 @@ all: up
 up:
 	@mkdir -p /home/mdourdoi/data/mariadb
 	@mkdir -p /home/mdourdoi/data/wordpress
+	@mkdir -p /home/mdourdoi/data/backups
 	$(COMPOSE) up --build -d
 
 down:
@@ -21,5 +22,6 @@ clean:
 fclean: clean
 	@sudo rm -rf /home/mdourdoi/data/mariadb
 	@sudo rm -rf /home/mdourdoi/data/wordpress
+	@sudo rm -rf /home/mdourdoi/data/backups
 
 .PHONY: all up down re clean fclean

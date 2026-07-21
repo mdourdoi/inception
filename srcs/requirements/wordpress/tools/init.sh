@@ -32,6 +32,13 @@ if ! wp core is-installed --path=/var/www/wordpress --allow-root 2>/dev/null; th
         --allow-root
 fi
 
+if ! wp plugin is-active redis-cache --path=/var/www/wordpress --allow-root 2>/dev/null; then
+    wp plugin install redis-cache --activate --path=/var/www/wordpress --allow-root
+fi
+wp config set WP_REDIS_HOST redis --path=/var/www/wordpress --allow-root
+wp config set WP_REDIS_PORT $REDIS_PORT --raw --path=/var/www/wordpress --allow-root
+wp redis enable --path=/var/www/wordpress --allow-root
+
 if [ "$NGINX_PORT" = "443" ]; then
     SITE_URL="https://$DOMAIN_NAME"
 else

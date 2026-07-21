@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Inception</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<h1>Inception</h1>
+	<p>A small web infrastructure built for 42: each service runs in its own
+	Docker container, built from its own Dockerfile, orchestrated with Docker
+	Compose. This page is served by one of them.</p>
+
+	<h2>Mandatory part</h2>
+	<ul>
+		<li><strong>nginx</strong> - entry point, serves the WordPress site over HTTPS</li>
+		<li><strong>wordpress</strong> - the site itself, running on php-fpm</li>
+		<li><strong>mariadb</strong> - the database</li>
+	</ul>
+
+	<h2>Bonus part</h2>
+	<ul>
+		<li><strong>redis</strong> - caches WordPress data in memory to speed up the site</li>
+		<li><strong>ftp</strong> - upload files directly into the website's folder</li>
+		<li><strong>static</strong> - this page (plain HTML/CSS, no PHP)</li>
+		<li><strong>adminer</strong> - web interface to browse the database</li>
+		<li><strong>backup</strong> - dumps the database every hour, keeps the last 7</li>
+	</ul>
+
+	<footer>42 Lyon - mdourdoi</footer>
+</body>
+</html>

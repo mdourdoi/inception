@@ -17,6 +17,13 @@ volumes:
       device: /home/mdourdoi/data/wordpress
       o: bind
 
+  backup_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/mdourdoi/data/backups
+      o: bind
+
 secrets:
 
   db_password:
@@ -25,6 +32,8 @@ secrets:
     file: ../secrets/db_root_password.txt
   credentials:
     file: ../secrets/credentials.txt
+  ftp_password:
+    file: ../secrets/ftp_password.txt
 
 services:
 
@@ -59,6 +68,7 @@ services:
       - WP_ADMIN_EMAIL=${WP_ADMIN_EMAIL}
       - WP_USER=${WP_USER}
       - WP_USER_EMAIL=${WP_USER_EMAIL}
+      - REDIS_PORT=${REDIS_PORT}
     secrets:
       - db_password
       - credentials
@@ -86,4 +96,73 @@ services:
     depends_on:
       - wordpress
     restart: unless-stopped
-    
+
+  redis:
+    image: redis:inception
+    build: ./bonus/redis
+    environment:
+      - REDIS_PORT=${REDIS_PORT}
+    networks:
+      - inception
+    restart: unless-stopped
+
+  ftp:
+    image: ftp:inception
+    build: ./bonus/ftp
+    environment:
+      - FTP_USER=${FTP_USER}
+      - FTP_PORT=${FTP_PORT}
+      - FTP_PASV_MIN=${FTP_PASV_MIN}
+      - FTP_PASV_MAX=${FTP_PASV_MAX}
+    secrets:
+      - ftp_password
+    volumes:
+      - wordpress_data:/var/www/wordpress
+    networks:
+      - inception
+    ports:
+      - "${FTP_PORT}:${FTP_PORT}"
+      - "${FTP_PASV_MIN}-${FTP_PASV_MAX}:${FTP_PASV_MIN}-${FTP_PASV_MAX}"
+    depends_on:
+      - wordpress
+    restart: unless-stopped
+
+  static:
+    image: static:inception
+    build: ./bonus/static
+    environment:
+      - STATIC_PORT=${STATIC_PORT}
+    networks:
+      - inception
+    ports:
+      - "${STATIC_PORT}:${STATIC_PORT}"
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:inception
+    build: ./bonus/adminer
+    environment:
+      - ADMINER_PORT=${ADMINER_PORT}
+      - MYSQL_PORT=${MYSQL_PORT}
+    networks:
+      - inception
+    ports:
+      - "${ADMINER_PORT}:${ADMINER_PORT}"
+    depends_on:
+      - mariadb
+    restart: unless-stopped
+
+  backup:
+    image: backup:inception
+    build: ./bonus/backup
+    environment:
+      - MYSQL_PORT=${MYSQL_PORT}
+    secrets:
+      - db_root_password
+    volumes:
+      - backup_data:/backups
+    networks:
+      - inception
+    depends_on:
+      - mariadb
+    restart: unless-stopped

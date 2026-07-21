@@ -22,6 +22,11 @@ three services:
 Two named volumes persist the database and the website files, and a dedicated
 Docker network connects the containers.
 
+The bonus part adds five more services, each in its own container built the same
+way: a **Redis** cache for WordPress, an **FTP** server pointing at the website
+files, a **static website**, **Adminer** and an automated **database backup**
+service (see the Bonus part section below).
+
 ## Project Description
 
 ### Docker usage and sources
@@ -35,7 +40,8 @@ hand. Each container runs a single service in the foreground as PID 1
 trick (`tail -f`, `sleep infinity`, etc.).
 
 The sources are organised under `srcs/`, with one directory per service in
-`srcs/requirements/`, each containing a Dockerfile and an entrypoint script
+`srcs/requirements/` (mandatory part) and `srcs/bonus/` (bonus part), each
+containing a Dockerfile and an entrypoint script
 (`tools/init.sh`) that performs first-run initialisation in an idempotent way.
 
 ### Main design choices
@@ -97,6 +103,37 @@ host path: they are named volumes from Docker's point of view (same commands,
 same lifecycle), while their underlying storage is a bind to a known,
 inspectable directory.
 
+## Bonus part
+
+Each bonus service follows the same rules as the mandatory ones: its own
+Dockerfile based on Debian bookworm, an idempotent `tools/init.sh` entrypoint,
+and a single foreground process as PID 1. All ports are configurable through
+the `.env` file.
+
+- **Redis** - an in-memory object cache for WordPress. Without it, WordPress
+  rebuilds every page by querying the database again; with it, repeated queries
+  are answered from memory. The WordPress entrypoint installs and activates the
+  `redis-cache` plugin automatically, so the cache is used out of the box.
+  Memory is capped (`maxmemory` + `allkeys-lru`) so the cache evicts old
+  entries instead of growing forever.
+- **FTP** - a vsftpd server chrooted into the WordPress volume, so files can be
+  uploaded to the website without going through the admin panel. The FTP user
+  is added to the `www-data` group (instead of taking ownership of the files)
+  so that php-fpm and FTP can both write. Passive mode uses a fixed port range
+  published alongside the control port.
+- **Static website** - a page presenting the Inception project itself, in plain
+  HTML/CSS (no PHP, as required),
+  served by Python's built-in HTTP server: zero configuration for content that
+  never changes.
+- **Adminer** - a single-file web interface to browse the MariaDB database,
+  served by PHP's built-in CLI server. Useful to verify during the defense that
+  WordPress data (posts, users) really lands in the database.
+- **Database backup (free-choice service)** - the only data that cannot be
+  rebuilt in this infrastructure is the database content. A cron job runs
+  `mariadb-dump` every hour into a dedicated volume on the host and keeps the
+  last 7 dumps. The volume protects against container destruction; the backups
+  protect against corruption and human error.
+
 ## Instructions
 
 Prerequisites: a Linux host (a virtual machine) with Docker and the Docker
@@ -119,6 +156,13 @@ make fclean # remove images and delete the persisted data
 The website is then available at `https://mdourdoi.42.fr` and the administration
 panel at `https://mdourdoi.42.fr/wp-admin` through the VM (we can't access /etc/hosts
 on school's computer)
+
+The bonus services are available at (ports from the `.env`):
+
+- Static website: `http://localhost:8081`
+- Adminer: `http://localhost:8082`
+- FTP: `ftp://localhost:21` (user and password from `.env` / `secrets/`)
+- Backups: `/home/mdourdoi/data/backups/` on the host
 
 ## Resources
 
